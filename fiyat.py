@@ -1,10 +1,10 @@
-"""Edirne Ticaret Borsası canlı hayvan salon fiyatlarını çekip docs/hayvan/data/fiyat.json'a ekler."""
+"""Edirne Ticaret Borsası canlı hayvan salon fiyatlarını çekip docs/data/fiyat.json'a ekler."""
 import json, os, time
 import requests
 
 URL0 = "https://online.etb.org.tr/api/v1/Alpha.WebPanel/OnlineKullaniciBulten/GetOnlineBultenSonIslemler"
 URLS = [URL0 + "CH", URL0]
-OUT = os.path.join(os.path.dirname(__file__), "..", "docs", "hayvan", "data", "fiyat.json")
+OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "docs", "data", "fiyat.json")
 KODLAR = {"1102002": "Kuzu", "1102004": "Süt Kuzusu", "1102001": "Koyun", "1102006": "Toklu",
           "1102003": "Keçi", "1102005": "Oğlak", "1102007": "Marya", "KE": "Buğday", "HBAA": "Arpa"}
 

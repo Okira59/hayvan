@@ -13,7 +13,10 @@ pip install -r requirements.txt
 
 ## Çalıştırma
 ```bash
-python fiyat.py
+python fiyat.py      # -> docs/data/fiyat.json
 ```
 
-> Not: Çıktı `../docs/hayvan/data/fiyat.json` dosyasına yazılır (eski depo düzeni: panel `Okira59/Pyhton/docs/hayvan/`).
+## Otomatik çalışma ve panel
+- `.github/workflows/hayvan.yml` her 30 dakikada tetiklenir, 2 saatte bir gerçekten çalışır (elle: Actions → "Hayvan Borsa Fiyatlari" → Run workflow).
+- "Sürü Takip" paneli (GitHub Pages, `main` dalı `/docs`): https://okira59.github.io/hayvan/ — sürü kayıtları tarayıcıda (localStorage) tutulur.
+- Android uygulaması: `docs/SuruTakip.apk`.
