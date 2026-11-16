@@ -28,10 +28,12 @@ td.n,th.n{text-align:right}.tag{display:inline-block;border-radius:7px;padding:1
 .big{font-size:28px;font-weight:800}.price{color:var(--y)}.scroll{overflow-x:auto}
 .toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--g);color:#052e16;padding:9px 16px;border-radius:10px;font-weight:700;display:none;z-index:9}
 svg text{fill:var(--mut);font-size:10px}
+#ciktiBtn{margin-left:auto;background:var(--card);color:var(--fg);border:0;border-radius:10px;padding:0 12px;height:44px;font-weight:700;font-size:14px;white-space:nowrap}
+#imza{position:fixed;right:8px;bottom:4px;font-size:11px;color:var(--mut);z-index:2;pointer-events:none;background:#0f1a14cc;padding:1px 6px;border-radius:6px}
 </style></head><body>
-<header><button id="menuBtn" aria-label="Menü" onclick="document.getElementById('nav').classList.add('acik');document.getElementById('perde').classList.add('acik')">☰</button><div><h1 id="baslik">Sürü Takip</h1><div class="mut">🐑 Sürü Takip</div></div></header>
+<header><button id="menuBtn" aria-label="Menü" onclick="document.getElementById('nav').classList.add('acik');document.getElementById('perde').classList.add('acik')">☰</button><div><h1 id="baslik">Sürü Takip</h1><div class="mut">🐑 Sürü Takip</div></div><button id="ciktiBtn" onclick="ciktiAl()" title="Bu sayfanın kayıtlarını yazdır / PDF">🖨️ Çıktı al</button></header>
 <div id="perde" onclick="this.classList.remove('acik');document.getElementById('nav').classList.remove('acik')"></div>
-<nav id="nav"><div class="mut" style="padding:4px 10px 8px">🐑 Sürü Takip</div><button data-v="ozet" class="on">📊 Özet</button><button data-v="liste">🐑 Hayvanlar</button><button data-v="kuzu">🍼 Kuzulama</button><button data-v="yem">🌾 Saman/Ot/Yem</button><button data-v="maliyet">💰 Yem Maliyeti</button><button data-v="asi">💉 Aşılar</button><button data-v="ilac">💊 İlaç Maliyetleri</button><button data-v="vet">🩺 Veteriner</button><button data-v="fiyat">📈 Borsa</button><button data-v="ayar">💾 Yedekleme</button></nav>
-<main id="app"></main><div class="toast" id="toast"></div>
-<script src="app.js?v=11"></script>
+<nav id="nav"><div class="mut" style="padding:4px 10px 8px">🐑 Sürü Takip</div><button data-v="ozet" class="on">📊 Özet</button><button data-v="liste">🐑 Hayvanlar</button><button data-v="kuzu">🍼 Kuzulama</button><button data-v="yem">🌾 Saman/Ot/Yem</button><button data-v="maliyet">💰 Yem Maliyeti</button><button data-v="asi">💉 Aşılar</button><button data-v="ilac">💊 İlaç Maliyetleri</button><button data-v="vet">🩺 Veteriner</button><button data-v="gider">🏢 İşletme Giderleri</button><button data-v="fiyat">📈 Borsa</button><button data-v="ayar">💾 Yedekleme</button></nav>
+<main id="app"></main><div class="toast" id="toast"></div><div id="imza">OkiRa8406 tarafından yapılmıştır</div><div id="cikti"></div>
+<script src="app.js?v=12"></script>
 </body></html>
