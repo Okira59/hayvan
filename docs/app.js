@@ -16,17 +16,31 @@ const VARSAYILAN_ASI = [
   ["Pastörella", "suru", 0, 0, 180, "Yılda 2 kez."],
   ["İç-dış parazit ilaçlaması", "suru", 0, 0, 180, "İlkbahar ve sonbahar."],
 ];
+const GIDER_KAT = {
+  "Çalışan ücretleri": ["Maaş", "Yevmiye", "Prim / ikramiye", "Avans"],
+  "SGK (SSK) primleri": ["SGK primi", "Bağ-Kur primi", "İşsizlik sigortası"],
+  "Vergiler": ["Gelir vergisi", "KDV", "Stopaj", "Muhtasar", "Emlak vergisi", "Harç"],
+  "Faturalar": ["Elektrik", "Su", "Doğalgaz", "İnternet", "Telefon"],
+  "Yemek": ["Çalışan yemeği", "Market / mutfak"],
+  "Temizlik": ["Temizlik malzemesi", "Dezenfektan", "Kireç", "Gübre temizliği"],
+  "Malzeme": ["Alet / ekipman", "Yalak / suluk", "Çit / tel", "Küpe", "Kırkım"],
+  "Akaryakıt": ["Mazot", "Benzin"],
+  "Kira": ["Ağıl / ahır kirası", "Mera / tarla kirası"],
+  "Bakım-onarım": ["Ağıl / ahır onarımı", "Traktör / araç bakımı"],
+  "Sigorta": ["TARSİM hayvan sigortası", "Araç sigortası"],
+  "Diğer": [],
+};
 const HEDEF = { suru: "Tüm sürü (tekrarlı)", kuzu: "Kuzular (doğuma göre)", gebe: "Gebeler (doğum öncesi)" };
 
-let D = load(), V = location.hash.slice(1) || "ozet", FIYAT = null, CANLI = null, HUB = null, EDIT = null, YEM = "bugday", SIRA = "kupe", BF = "saman";
+let D = load(), V = location.hash.slice(1) || "ozet", FIYAT = null, CANLI = null, HUB = null, EDIT = null, YEM = "bugday", SIRA = "kupe", BF = "saman", GDON = null;
 const YEMLER = { bugday: { ad: "Buğday", kod: "KE" }, arpa: { ad: "Arpa", kod: "HBAA" }, kaba: { ad: "Kaba Yem", kod: null } };
-const BASLIK = { ozet: "Özet", liste: "Hayvanlar", kuzu: "Kuzulama", asi: "Aşılar", yem: "Saman/Ot/Yem", maliyet: "Yem Maliyeti", ilac: "İlaç Maliyetleri", vet: "Veteriner", fiyat: "Borsa", hayvan: "Hayvanlar", ayar: "Yedekleme" };
+const BASLIK = { ozet: "Özet", liste: "Hayvanlar", kuzu: "Kuzulama", asi: "Aşılar", yem: "Saman/Ot/Yem", maliyet: "Yem Maliyeti", ilac: "İlaç Maliyetleri", vet: "Veteriner", gider: "İşletme Giderleri", fiyat: "Borsa", hayvan: "Hayvanlar", ayar: "Yedekleme" };
 
 function load() {
   let d = null;
   try { d = JSON.parse(localStorage.getItem(KEY)); } catch (e) {}
   d = d || {};
-  for (const k of ["hayvanlar", "kuzulama", "katim", "asilar", "tuketim", "yemFiyat", "birimFiyat", "ilaclar", "veteriner"]) d[k] = d[k] || [];
+  for (const k of ["hayvanlar", "kuzulama", "katim", "asilar", "tuketim", "yemFiyat", "birimFiyat", "ilaclar", "veteriner", "giderler"]) d[k] = d[k] || [];
   if (!d.asiTur) d.asiTur = VARSAYILAN_ASI.map((a, i) => ({ id: "v" + i, ad: a[0], hedef: a[1], ilkGun: a[2], rapelGun: a[3], aralikGun: a[4], not: a[5] }));
   return d;
 }
@@ -292,6 +306,44 @@ const VIEWS = {
     ${toplamKart(D.veteriner, "Veteriner maliyeti", ozet)}
     <div class="card"><h2>Veteriner kayıtları</h2><input placeholder="Ara" oninput="filtre(this.value,'vt')"><div class="scroll"><table id="vt"><tr><th>Tarih / Veteriner</th><th>İşlem</th><th class="n">Ücret</th><th></th></tr>
       ${son.map(x => `<tr><td>${trT(x.tarih)}<div><b>${esc(x.vet || "-")}</b></div></td><td>${esc(x.islem || "")}<div class="mut">${esc(x.hedef || "")}${x.aciklama ? " · " + esc(x.aciklama) : ""}${x.not ? " · " + esc(x.not) : ""}</div></td><td class="n">${fmt(+x.tutar || 0, 2)} ₺</td><td class="n"><button class="ed" onclick="duzenle('veteriner','${x.id}')">Düzenle</button><button class="del" onclick="sil('veteriner','${x.id}')">Sil</button></td></tr>`).join("") || `<tr><td colspan=4 class="mut">Kayıt yok</td></tr>`}</table></div></div>`;
+  },
+
+  gider() {
+    if (GDON === null) GDON = bugun().slice(0, 7);
+    const e = EDIT && EDIT.tip === "giderler" ? D.giderler.find(x => x.id === EDIT.id) : null;
+    const a = e ? { ...e, ...(EDIT.kopya ? { tarih: bugun() } : {}) } : { tarih: bugun(), kat: "Çalışan ücretleri", odeme: "Nakit" };
+    const bg = bugun(), donem = x => x.tarih.startsWith(GDON);
+    const aylar = [...new Set([bg.slice(0, 7), ...D.giderler.map(x => x.tarih.slice(0, 7))])].sort().reverse();
+    const yillar = [...new Set(aylar.map(x => x.slice(0, 4)))];
+    const ayAd = m => new Date(m + "-15T12:00:00").toLocaleDateString("tr-TR", { month: "long", year: "numeric" });
+    const donemAd = GDON.length === 7 ? ayAd(GDON) : GDON ? GDON + " yılı" : "Tüm kayıtlar";
+    const L = D.giderler.filter(donem).sort((x, y) => y.tarih.localeCompare(x.tarih));
+    const kat = {}; L.forEach(x => kat[x.kat] = (kat[x.kat] || 0) + (+x.tutar || 0));
+    const ozet = {}; D.giderler.filter(x => x.tarih.slice(0, 4) === bg.slice(0, 4)).forEach(x => ozet[x.kat] = (ozet[x.kat] || 0) + (+x.tutar || 0));
+    const isl = L.reduce((s, x) => s + (+x.tutar || 0), 0);
+    const yemT = D.tuketim.filter(donem).reduce((s, x) => s + gunMaliyet(x), 0);
+    const ilT = D.ilaclar.filter(donem).reduce((s, x) => s + (+x.tutar || 0), 0), vetT = D.veteriner.filter(donem).reduce((s, x) => s + (+x.tutar || 0), 0);
+    const kalem = Object.values(GIDER_KAT).flat();
+    return `<div class="card"><h2>${e && !EDIT.kopya ? "Gider kaydını düzenle" : "Gider ekle"}</h2>
+      <div class="f2"><div><label>Tarih</label><input id="g_tarih" type="date" value="${a.tarih}"></div>
+      <div><label>Gider türü</label><select id="g_kat" onchange="gKat()">${Object.keys(GIDER_KAT).map(k => opt(k, k, a.kat === k)).join("")}</select></div></div>
+      <div class="f2"><div><label>Kalem</label><input id="g_kalem" list="gKalem" value="${esc(a.kalem || "")}" placeholder="Listeden seçin veya yazın"><datalist id="gKalem">${(GIDER_KAT[a.kat] || kalem).map(x => opt(x, "")).join("")}</datalist></div>
+      <div><label>Kime / firma (çalışan adı, kurum…)</label><input id="g_kime" list="gKime" value="${esc(a.kime || "")}"><datalist id="gKime">${[...new Set(D.giderler.map(x => x.kime).filter(Boolean))].map(x => opt(x, "")).join("")}</datalist></div></div>
+      <div class="f2"><div><label>Tutar (₺)</label><input id="g_tutar" type="number" step="0.01" inputmode="decimal" value="${a.tutar ?? ""}"></div>
+      <div><label>Ödeme şekli</label><select id="g_odeme">${["Nakit", "Banka / EFT", "Kredi kartı", "Veresiye (ödenmedi)"].map(x => opt(x, x, a.odeme === x)).join("")}</select></div></div>
+      <label>Not (dönem, fatura no…)</label><input id="g_not" value="${esc(a.not || "")}">
+      <button class="btn" onclick="giderKaydet()">${e && !EDIT.kopya ? "Güncelle" : "Kaydet"}</button>${e ? `<button class="btn sec" onclick="EDIT=null;render()">Vazgeç</button>` : ""}</div>
+    ${toplamKart(D.giderler, "İşletme giderleri", ozet)}
+    <div class="card"><div class="row"><h2>Dönem: ${esc(donemAd)}</h2><select style="width:auto" onchange="GDON=this.value;render()">${aylar.map(m => opt(m, ayAd(m), GDON === m)).join("")}${yillar.map(y => opt(y, y + " yılı", GDON === y)).join("")}${opt("", "Tüm kayıtlar", GDON === "")}</select></div>
+      <h3>Gider türlerine göre</h3><div class="scroll"><table><tr><th>Gider türü</th><th class="n">Tutar</th><th class="n">Pay</th></tr>
+      ${Object.entries(kat).sort((x, y) => y[1] - x[1]).map(([k, v]) => `<tr><td>${esc(k)}</td><td class="n">${fmt(v, 2)} ₺</td><td class="n mut">${isl ? fmt(v / isl * 100, 0) : 0}%</td></tr>`).join("") || `<tr><td colspan=3 class="mut">Bu dönemde gider yok</td></tr>`}
+      <tr><td><b>İşletme giderleri toplamı</b></td><td class="n"><b>${fmt(isl, 2)} ₺</b></td><td></td></tr></table></div>
+      <h3>Tüm giderler (yem, ilaç, veteriner dahil)</h3><div class="scroll"><table>
+      <tr><td>Saman / ot / yem tüketimi</td><td class="n">${fmt(yemT, 2)} ₺</td></tr><tr><td>İlaç</td><td class="n">${fmt(ilT, 2)} ₺</td></tr><tr><td>Veteriner</td><td class="n">${fmt(vetT, 2)} ₺</td></tr><tr><td>İşletme giderleri</td><td class="n">${fmt(isl, 2)} ₺</td></tr>
+      <tr><td><b>Genel toplam</b></td><td class="n"><b class="price">${fmt(yemT + ilT + vetT + isl, 2)} ₺</b></td></tr></table></div>
+      <div class="mut">Yem maliyeti, Saman/Ot/Yem sayfasındaki birim fiyatlarla hesaplanır.</div></div>
+    <div class="card"><h2>Gider kayıtları – ${esc(donemAd)}</h2><input placeholder="Ara (tür, kalem, kişi…)" oninput="filtre(this.value,'gt')"><div class="scroll"><table id="gt"><tr><th>Tarih</th><th>Gider</th><th>Ödeme</th><th class="n">Tutar</th><th></th></tr>
+      ${L.map(x => `<tr><td>${trT(x.tarih)}</td><td><b>${esc(x.kat)}</b>${x.kalem ? " · " + esc(x.kalem) : ""}<div class="mut">${esc(x.kime || "")}${x.kime && x.not ? " · " : ""}${esc(x.not || "")}</div></td><td>${x.odeme && x.odeme.startsWith("Veresiye") ? `<span class="tag t-r">Ödenmedi</span>` : esc(x.odeme || "")}</td><td class="n">${fmt(+x.tutar || 0, 2)} ₺</td><td class="n"><button class="ed" onclick="EDIT={tip:'giderler',id:'${x.id}',kopya:true};render();scrollTo(0,0)" title="Aynı gideri bugünün tarihiyle tekrar gir">Tekrarla</button><button class="ed" onclick="duzenle('giderler','${x.id}')">Düzenle</button><button class="del" onclick="sil('giderler','${x.id}')">Sil</button></td></tr>`).join("") || `<tr><td colspan=5 class="mut">Kayıt yok</td></tr>`}</table></div></div>`;
   },
 
   fiyat() {
@@ -572,6 +624,11 @@ function ilacKaydet() {
 function vetKaydet() {
   upsert("veteriner", { id: EDIT && EDIT.tip === "veteriner" ? EDIT.id : uid(), tarih: val("v_tarih") || bugun(), vet: val("v_vet"), islem: val("v_islem"), hedef: val("v_hedef"), aciklama: val("v_aciklama"), tutar: num(val("v_tutar")), not: val("v_not") }); save();
 }
+function gKat() { const l = GIDER_KAT[val("g_kat")] || []; document.getElementById("gKalem").innerHTML = l.map(x => opt(x, "")).join(""); document.getElementById("g_kalem").value = ""; }
+function giderKaydet() {
+  const tutar = num(val("g_tutar")); if (!(tutar > 0)) return toast("Tutar girin");
+  upsert("giderler", { id: EDIT && EDIT.tip === "giderler" && !EDIT.kopya ? EDIT.id : uid(), tarih: val("g_tarih") || bugun(), kat: val("g_kat"), kalem: val("g_kalem"), kime: val("g_kime"), tutar, odeme: val("g_odeme"), not: val("g_not") }); save();
+}
 function csvAl() {
   const c = s => `"${String(s ?? "").replace(/"/g, '""')}"`, L = [];
   L.push("KUZULAMA", "Tarih;Anne;Kuzu;Erkek;Dişi;Ölü;Not", ...D.kuzulama.map(x => [x.tarih, x.anne, x.sayi, x.erkek, x.disi, x.olu, x.not].map(c).join(";")), "");
@@ -579,15 +636,53 @@ function csvAl() {
   L.push("TÜKETİM", "Tarih;Saman (balya);Ot (balya);Yem (çuval);Not", ...D.tuketim.map(x => [x.tarih, x.saman, x.ot, x.yem, x.not].map(c).join(";")), "");
   L.push("İLAÇLAR", "Tarih;İlaç;Ne işe yarar;Uygulama;Kime;Adet;Maliyet;Not", ...D.ilaclar.map(x => [x.tarih, x.ad, x.amac, x.sekil, x.hedef, x.adet, x.tutar, x.not].map(c).join(";")), "");
   L.push("VETERİNER", "Tarih;Veteriner;İşlem;Kime;Açıklama;Ücret;Not", ...D.veteriner.map(x => [x.tarih, x.vet, x.islem, x.hedef, x.aciklama, x.tutar, x.not].map(c).join(";")), "");
+  L.push("İŞLETME GİDERLERİ", "Tarih;Gider türü;Kalem;Kime;Ödeme;Tutar;Not", ...D.giderler.map(x => [x.tarih, x.kat, x.kalem, x.kime, x.odeme, x.tutar, x.not].map(c).join(";")), "");
   L.push("HAYVANLAR", "Küpe;Ad;Tür;Irk;Cinsiyet;Doğum;Sürüde;Not", ...D.hayvanlar.map(x => [x.kupe, x.ad, x.tur, x.irk, x.cins, x.dogum, x.aktif === false ? "Hayır" : "Evet", x.not].map(c).join(";")));
   indir(`suru-${bugun()}.csv`, "\ufeff" + L.join("\n"), "text/csv");
 }
+
+/* ---------- Çıktı (yazdır / PDF) ---------- */
+const CIKTI_CSS = `#cikti{font:12px/1.4 Arial,Helvetica,sans-serif;color:#000;background:#fff;padding:0 2px 24px}
+#cikti *{color:#000!important;background:transparent!important;box-shadow:none!important}
+#cikti .ust{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #000;padding-bottom:6px;margin-bottom:8px}
+#cikti h1{font-size:18px;margin:0}#cikti h2{font-size:14px;margin:0 0 6px}#cikti h3{font-size:12px;margin:8px 0 4px}
+#cikti .card{border:1px solid #999;border-radius:6px;padding:8px;margin:8px 0}
+#cikti table{width:100%;border-collapse:collapse;font-size:11.5px}#cikti th,#cikti td{border:1px solid #bbb;padding:3px 5px;text-align:left;vertical-align:top}
+#cikti th{background:#eee!important}#cikti .n{text-align:right}#cikti tr{break-inside:avoid}
+#cikti .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}#cikti .stat{border:1px solid #bbb;border-radius:5px;padding:5px}#cikti .stat b{display:block;font-size:15px}
+#cikti .mut{color:#444!important;font-size:10.5px}#cikti .tag{border:1px solid #888;border-radius:4px;padding:0 4px;font-size:10px}
+#cikti .scroll{max-height:none!important;overflow:visible!important}#cikti svg text{fill:#333}
+#cikti .alt{text-align:right;font-size:10px;color:#555!important;margin-top:10px}
+@media print{#cikti .alt{position:fixed;right:0;bottom:0;margin:0}}`;
+function ciktiIcerik() {
+  const c = document.getElementById("app").cloneNode(true);
+  c.querySelectorAll("input,select,textarea,button,label,datalist,.secim,#ocr_durum,#m_sonuc,#h_sonuc").forEach(x => x.remove());
+  c.querySelectorAll(".card").forEach(k => { if (!k.querySelector("table,.stat,svg")) k.remove(); });
+  c.querySelectorAll("table").forEach(t => {
+    const R = [...t.rows].filter(r => ![...r.cells].some(x => x.colSpan > 1)), n = Math.max(0, ...R.map(r => r.cells.length));
+    for (let i = n - 1; i >= 0; i--) if (R.every(r => !r.cells[i] || !r.cells[i].textContent.trim())) R.forEach(r => r.cells[i] && r.cells[i].remove());
+  });
+  const zaman = new Date().toLocaleString("tr-TR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+  return `<div class="ust"><div><h1>Sürü Takip – ${esc(BASLIK[V] || "Özet")}</h1></div><div>${zaman}</div></div>${c.innerHTML}<div class="alt">OkiRa8406 tarafından yapılmıştır</div>`;
+}
+function ciktiAl() {
+  const ic = ciktiIcerik();
+  if (window.AndroidApp) {
+    indir(`suru-${V}-${bugun()}.html`, `<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Sürü Takip – ${esc(BASLIK[V] || "")}</title><style>body{margin:10px;background:#fff}${CIKTI_CSS}</style></head><body><div id="cikti">${ic}</div><script>setTimeout(()=>print(),400)<\/script></body></html>`, "text/html");
+    return toast("Çıktı dosyası İndirilenler'e kaydedildi");
+  }
+  if (!document.getElementById("ciktiCss")) { const st = document.createElement("style"); st.id = "ciktiCss"; st.textContent = `@media screen{#cikti{display:none}}@media print{body{background:#fff!important}body>*:not(#cikti){display:none!important}@page{margin:12mm}}` + CIKTI_CSS; document.head.appendChild(st); }
+  document.getElementById("cikti").innerHTML = ic;
+  menu(false); window.print();
+}
+addEventListener("afterprint", () => { const c = document.getElementById("cikti"); if (c) c.innerHTML = ""; });
 
 /* ---------- Genel ---------- */
 function go(v) { V = v; EDIT = null; location.hash = v; menu(false); render(); scrollTo(0, 0); }
 function render() {
   document.querySelectorAll("#nav button").forEach(b => b.classList.toggle("on", b.dataset.v === (V === "hayvan" ? "liste" : V)));
   document.getElementById("baslik").textContent = BASLIK[V] || "Özet";
+  document.getElementById("ciktiBtn").style.display = V === "ayar" ? "none" : "";
   document.getElementById("app").innerHTML = (VIEWS[V] || VIEWS.ozet)();
 }
 function bildirim() {
