@@ -313,7 +313,7 @@ const VIEWS = {
     const e = EDIT && EDIT.tip === "giderler" ? D.giderler.find(x => x.id === EDIT.id) : null;
     const a = e ? { ...e, ...(EDIT.kopya ? { tarih: bugun() } : {}) } : { tarih: bugun(), kat: "Çalışan ücretleri", odeme: "Nakit" };
     const bg = bugun(), donem = x => x.tarih.startsWith(GDON);
-    const aylar = [...new Set([bg.slice(0, 7), ...D.giderler.map(x => x.tarih.slice(0, 7))])].sort().reverse();
+    const aylar = [...new Set([bg.slice(0, 7), ...[...D.giderler, ...D.tuketim, ...D.ilaclar, ...D.veteriner].map(x => x.tarih.slice(0, 7))])].sort().reverse();
     const yillar = [...new Set(aylar.map(x => x.slice(0, 4)))];
     const ayAd = m => new Date(m + "-15T12:00:00").toLocaleDateString("tr-TR", { month: "long", year: "numeric" });
     const donemAd = GDON.length === 7 ? ayAd(GDON) : GDON ? GDON + " yılı" : "Tüm kayıtlar";
