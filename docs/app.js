@@ -671,11 +671,11 @@ function ciktiAl() {
     indir(`suru-${V}-${bugun()}.html`, `<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Sürü Takip – ${esc(BASLIK[V] || "")}</title><style>body{margin:10px;background:#fff}${CIKTI_CSS}</style></head><body><div id="cikti">${ic}</div><script>setTimeout(()=>print(),400)<\/script></body></html>`, "text/html");
     return toast("Çıktı dosyası İndirilenler'e kaydedildi");
   }
-  if (!document.getElementById("ciktiCss")) { const st = document.createElement("style"); st.id = "ciktiCss"; st.textContent = `@media screen{#cikti{display:none}}@media print{body{background:#fff!important}body>*:not(#cikti){display:none!important}@page{margin:12mm}}` + CIKTI_CSS; document.head.appendChild(st); }
+  if (!document.getElementById("ciktiCss")) { const st = document.createElement("style"); st.id = "ciktiCss"; st.textContent = `@media screen{#cikti{display:none}}@media print{body.yazdir{background:#fff!important}body.yazdir>*:not(#cikti){display:none!important}body:not(.yazdir) #cikti{display:none}@page{margin:12mm}}` + CIKTI_CSS; document.head.appendChild(st); }
   document.getElementById("cikti").innerHTML = ic;
-  menu(false); window.print();
+  document.body.classList.add("yazdir"); menu(false); window.print();
 }
-addEventListener("afterprint", () => { const c = document.getElementById("cikti"); if (c) c.innerHTML = ""; });
+addEventListener("afterprint", () => { document.body.classList.remove("yazdir"); const c = document.getElementById("cikti"); if (c) c.innerHTML = ""; });
 
 /* ---------- Genel ---------- */
 function go(v) { V = v; EDIT = null; location.hash = v; menu(false); render(); scrollTo(0, 0); }
